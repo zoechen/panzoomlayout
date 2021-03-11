@@ -1,124 +1,98 @@
 <template>
-  <v-app>
-    <v-app-bar app flat color="primary" dark>
-      <v-menu right bottom :close-on-content-click="closeOnSelected">
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn icon v-bind="attrs" v-on="on">
-            <v-icon>mdi-filter-variant</v-icon>
-          </v-btn>
-        </template>
-        <v-card>
-          <v-card-text>
-            <v-select v-model="selType" :items="sowType" label="篩選" @change="selectType(selType)">
-              <template slot="selection" slot-scope="{ item }">
-                <v-icon :color="item.color">●</v-icon> {{ item.typeName }}
-              </template>
-              <template slot="item" slot-scope="{ item }">
-                <v-icon :color="item.color">●</v-icon> {{ item.typeName }}
-              </template>
-            </v-select>
-          </v-card-text>
-        </v-card>
-      </v-menu>
-      <v-spacer></v-spacer>
-      <v-menu left bottom :close-on-content-click="closeOnContentClick">
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn icon v-bind="attrs" v-on="on">
-            <v-icon>mdi-magnify</v-icon>
-          </v-btn>
-        </template>
-        <v-card>
-          <v-card-text>
-            <v-text-field label="Find by ID" v-model="pickID"></v-text-field
-            ><v-btn @click="findByID">send</v-btn>
-          </v-card-text>
-        </v-card>
-      </v-menu>
-    </v-app-bar>
+  <div style="height: 800px">
 
-    <v-main>
-      <v-col cols="12">
-          <v-btn fab dark small @click="zoomin"
-            ><v-icon dark> mdi-magnify-plus-outline </v-icon></v-btn
-          > 
-          <v-btn fab dark small @click="zoomout"
-            ><v-icon dark> mdi-magnify-minus-outline </v-icon></v-btn
-          ></v-col
-        > 
-      <SvgPanZoom
-        style="width: 100%; height: 300px; border: 1px solid black"
-        @svgpanzoom="registerSvgPanZoom"
-        :panEnabled="panState"
-        :mouseWheelZoomEnabled="false"
+
+    <SvgPanZoom
+      style="width: 100%; height: 300px; border: 1px solid black"
+      @svgpanzoom="registerSvgPanZoom"
+      :panEnabled="panState"
+      :mouseWheelZoomEnabled="false"
+    >
+      <svg width="100%" height="300" id="svgElement">
+        <g v-for="item in layout" :key="item.id">
+          <rect
+            :id="item.id"
+            :x="item.x"
+            :y="item.y"
+            rx="8"
+            ry="8"
+            :width="boxWidth"
+            :height="boxHeight"
+            :fill="item.color"
+            style="stroke: white; stroke-width: 5"
+            @mousedown="pick(item.id)"
+            @touchstart="pick(item.id)"
+          />
+          <text :x="item.x + 15" :y="item.y + 25" fill="white">
+            {{ item.id }}
+          </text>
+          <circle
+            :id="'c-' + item.id"
+            :cx="item.x + 115"
+            :cy="item.y + 25"
+            r="10"
+            :fill="item.color"
+          />
+        </g>
+      </svg>
+    </SvgPanZoom>
+    <v-row
+      ><v-btn @click="zoomin">zoom in</v-btn><v-spacer /><v-btn @click="zoomout"
+        >zoom out</v-btn
       >
-        <svg width="100%" height="300" id="svgElement">
-          <g v-for="item in layout" :key="item.id">
-            <rect
-              :id="item.id"
-              :x="item.x"
-              :y="item.y"
-              rx="8"
-              ry="8"
-              :width="boxWidth"
-              :height="boxHeight"
-              :fill="item.color"
-              style="stroke: white; stroke-width: 5"
-              @mousedown="pick(item.id)"
-              @touchstart="pick(item.id)"
-            />
-            <text :x="item.x + 15" :y="item.y + 25" fill="white">
-              {{ item.id }}
-            </text>
-            <circle
-              :id="'c-' + item.id"
-              :cx="item.x + 115"
-              :cy="item.y + 25"
-              r="10"
-              :fill="item.color"
-            />
-          </g>
-        </svg>
-      </SvgPanZoom> 
-        
-      <SvgPanZoomThumbnail
-        style="width: 100%; height: 300px; border: 1px solid black"
-        :onThumbnailShown="onThumbnailShown"
-        :mainSPZ="mainSPZ"
-        :bus="bus"
-      >
-        <svg width="100%" height="300" id="thumbnail">
-          <g v-for="item in layout" :key="item.id">
-            <rect
-              :id="item.id"
-              :x="item.x"
-              :y="item.y"
-              :width="boxWidth"
-              :height="boxHeight"
-              :fill="[
-                item.color == '#aaaaaa'
-                  ? '#aaa'
-                  : item.color == selType.color
-                  ? item.color
-                  : '#000',
-              ]"
-              style="stroke: #eee; stroke-width: 15"
-            />
-          </g>
-        </svg>
-      </SvgPanZoomThumbnail>
-    </v-main>
-  </v-app>
+    </v-row>
+    <SvgPanZoomThumbnail
+      style="width: 100%; height: 300px; border: 1px solid black"
+      :onThumbnailShown="onThumbnailShown"
+      :mainSPZ="mainSPZ"
+      :bus="bus"
+    >
+      <svg width="100%" height="300" id="thumbnail">
+        <g v-for="item in layout" :key="item.id">
+          <rect
+            :id="item.id"
+            :x="item.x"
+            :y="item.y"
+            :width="boxWidth"
+            :height="boxHeight"
+            :fill="[
+              item.color == '#aaaaaa'
+                ? '#aaa'
+                : item.color == selType.color
+                ? item.color
+                : '#000',
+            ]"
+            style="stroke: #eee; stroke-width: 15"
+          />
+        </g>
+      </svg>
+    </SvgPanZoomThumbnail>
+        <v-row>
+      <v-col cols="6">
+        <v-text-field label="Find by ID" v-model="pickID"></v-text-field
+        ><v-btn @click="findByID()">send</v-btn>
+      </v-col>
+      <v-col cols="6">
+        <v-select v-model="selType" :items="sowType" label="篩選">
+          <template slot="selection" slot-scope="{ item }">
+            <v-icon :color="item.color">●</v-icon> {{ item.typeName }}
+          </template>
+          <template slot="item" slot-scope="{ item }">
+            <v-icon :color="item.color">●</v-icon> {{ item.typeName }}
+          </template>
+        </v-select>
+      </v-col>
+    </v-row>
+    <p>{{ pickText }}</p>
+  </div>
 </template>
-
 <script>
 import SvgPanZoom from "vue-svg-pan-zoom";
-import SvgPanZoomThumbnail from "./components/SvgPanZoomThumbnail";
-import { EventBus } from "./components/EventBus";
+import SvgPanZoomThumbnail from "../components/SvgPanZoomThumbnail";
+import { EventBus } from "../components/EventBus";
 export default {
   components: { SvgPanZoomThumbnail, SvgPanZoom },
   data: () => ({
-    closeOnContentClick:false,
-    closeOnSelected:false,
     mainSPZ: null,
     bus: EventBus(),
     pickText: "none",
@@ -244,7 +218,6 @@ export default {
       console.log("thumbnailCreated");
     },
     findByID() {
-      this.closeOnContentClick = true;
       let id = parseInt(this.pickID);
       let s = _.find(this.layout, ["id", id]);
 
@@ -286,15 +259,12 @@ export default {
       this.mainSPZ.pan({ x: centerX, y: centerY });
       this.bus.$emit("mainPan", { x: s.x, y: s.y });
     },
-    selectType(item){
-      this.closeOnSelected =true;
-      console.log(item);
-    },
     initSPZ() {
       this.mainSPZ.resetZoom();
     },
   },
   mounted: () => {
+    
     this.mainSPZ.onPan = (...args) => {
       this.bus.$emit("mainPan");
       if (this.onPan) this.onPan(args);
@@ -304,3 +274,5 @@ export default {
   },
 };
 </script>
+<style>
+</style>
